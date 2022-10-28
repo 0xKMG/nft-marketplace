@@ -16,7 +16,6 @@ const MyApp = ({ Component, pageProps }) => (
     </div>
     <Script src="https://kit.fontawesome.com/364b062ad2.js" crossorigin="anonymous"> </Script>
     Copy Kit Code!
-
   </ThemeProvider>
 );
 
