@@ -13,7 +13,8 @@ const Home = () => {
   const { fetchNFTs } = useContext(NFTContext);
   const [nfts, setNfts] = useState([]);
   const [nftsCopy, setNftsCopy] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // for demo
+  const [isLoading, setIsLoading] = useState(false);
   const [hideButtons, setHideButtons] = useState(false);
   const [activeSelect, setActiveSelect] = useState('Recently Added');
 
