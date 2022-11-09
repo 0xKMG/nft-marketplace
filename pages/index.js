@@ -107,8 +107,8 @@ const Home = () => {
           childStyles="md:text-4xl sm:text-2xl xs:text-xl text-left"
           parentStyle="justify-start mb-7 h-72 sm:h-60 p-12 xs:p-4 xs:h-44 rounded-3xl"
         />
-
-        {!isLoading && !nfts.length ? (
+        {!isLoading && nfts.length ? (
+          // !demo data for now
           <h1 className="font-poppins dark:text-white text-nft-black-1 text-2xl minlg:text-4xl font-semibold ml-4 xs:ml-0">That&apos;s weird... No NFTs for sale!</h1>
         ) : isLoading ? <Loader /> : (
           <>
@@ -159,7 +159,7 @@ const Home = () => {
               </div>
               <div className="mt-3 w-full flex flex-wrap justify-start md:justify-center">
                 {nfts.map((nft) => <NFTCard key={nft.tokenId} nft={nft} />)}
-                {/* {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
                   <NFTCard
                     key={`nft-${i}`}
                     nft={{
@@ -171,7 +171,7 @@ const Home = () => {
                       description: 'Cool NFT on Sale',
                     }}
                   />
-                ))} */}
+                ))}
               </div>
             </div>
           </>
