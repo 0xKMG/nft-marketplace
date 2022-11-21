@@ -1,34 +1,31 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4; // set version to match with waht we have in our hardhat configuration
+pragma solidity ^0.8.4; 
 
-// Using ERC721 standard
-// Functionality we can use
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 import "hardhat/console.sol";
 
-// Creating our contract ->Inherited from ERC721URIStorage
+
 contract NFTMarketplace is ERC721URIStorage {
-    // allows us to use the coutner utility.
+ 
     using Counters for Counters.Counter;
-    // when the first token is minted it'll get a value of zero, the second one is one
-    // and then using counters this we'll increment token ids
+
+    // @notice when the first token is minted it'll get a value of zero, the second one is one
+ 
     Counters.Counter private _tokenIds;
     Counters.Counter private _itemsSold;
 
-    // fee to list an nft on the marketplace
-    // charge a listing fee.
+    // @notice fee to list an nft on the marketplace, charing native token
+ 
     uint256 listingPrice = 0.025 ether;
 
-    // declaring the owner of the contract
-    // owner earns a commision on every item sold
+    // @notice owner earns a commision on every item sold
     address payable owner;
 
-    // keeping up with all the items that have been created
-    // pass in the integer which is the item id and it returns a market item.
-    // to fetch a market item, we only need the item id
+    // @notice keeping up with all the items that have been created
+    // @dev pass in the integer which is the item id and it returns a market item.
     mapping(uint256 => MarketItem) private idToMarketItem;
 
     struct MarketItem {
@@ -39,9 +36,9 @@ contract NFTMarketplace is ERC721URIStorage {
       bool sold;
     }
 
-    // have an event for when a market item is created.
-    // this event matches the MarketItem
-    event MarketItemCreated (
+    // @notice have an event for when a market item is created.
+    // @notice this event matches the MarketItem
+    event MarketItemCreated ( 
       uint256 indexed tokenId,
       address seller,
       address owner,
@@ -49,48 +46,43 @@ contract NFTMarketplace is ERC721URIStorage {
       bool sold
     );
 
-    // set the owner as the msg.sender
-    // the owner of the contract is the one deploying it
     constructor() ERC721("Metaverse Tokens", "METT") {
       owner = payable(msg.sender);
     }
 
-    /* Updates the listing price of the contract */
+    // @notice Updates the listing price of the contract 
+
+    
     function updateListingPrice(uint _listingPrice) public payable {
       require(owner == msg.sender, "Only marketplace owner can update listing price.");
       listingPrice = _listingPrice;
     }
 
-    /* Returns the listing price of the contract */
+    // @notice Returns the listing price of the contract 
     function getListingPrice() public view returns (uint256) {
       return listingPrice;
     }
 
-    /* Mints a token and lists it in the marketplace */
+    // @notice Mints a token and lists it in the marketplace 
     function createToken(string memory tokenURI, uint256 price) public payable returns (uint) {
       _tokenIds.increment();
-      // create a variable that get's the current value of the tokenIds (0, 1, 2...)
+      // @notice create a variable that get's the current value of the tokenIds
       uint256 newTokenId = _tokenIds.current();
-      // mint the token with
       _mint(msg.sender, newTokenId);
       _setTokenURI(newTokenId, tokenURI);
       createMarketItem(newTokenId, price);
-      // we've just minted the token and made it sellable
-      // now we can return the id to the client side so we can work with it
       return newTokenId;
     }
 
+
+
     function createMarketItem(uint256 tokenId, uint256 price) private {
-      // require a certain CONDITION, in this case price greater than 0
+      // @notice price must be greater than 0
       require(price > 0, "Price must be at least 1 wei");
-      // require that the users sending in the transaction is sending in the correct amount
+      // @notice require that the users sending in the transaction is sending in the correct amount
+      // @dev consider a refund mechanism when more eth is sent than required 
       require(msg.value == listingPrice, "Price must be equal to listing price");
 
-      // create the mapping for the market items 
-      // payable(address(0)) is the owner. 
-      // currently there's no owner as the seller is putting it to market so it's an empty address
-      // last value  is boolean for sold, its false because we just put it so it's not sold yet
-      // this is creating the first market item
       idToMarketItem[tokenId] =  MarketItem(
         tokenId,
         payable(msg.sender),
@@ -99,8 +91,7 @@ contract NFTMarketplace is ERC721URIStorage {
         false
       );
 
-      // we now want to transfer the ownership of the nft to the contract -> next buyer
-      // method available on IERC721
+      // @notice transfer the ownership of the nft to the contract -> next buyer
       _transfer(msg.sender, address(this), tokenId);
       emit MarketItemCreated(
         tokenId,
@@ -111,9 +102,10 @@ contract NFTMarketplace is ERC721URIStorage {
       );
     }
 
-    /* allows someone to resell a token they have purchased */
+    // @notice allows someone to resell a token they have purchased 
     function resellToken(uint256 tokenId, uint256 price) public payable {
       require(idToMarketItem[tokenId].owner == msg.sender, "Only item owner can perform this operation");
+      // @dev can be updated for the refund mechanism
       require(msg.value == listingPrice, "Price must be equal to listing price");
       idToMarketItem[tokenId].sold = false;
       idToMarketItem[tokenId].price = price;
@@ -124,8 +116,8 @@ contract NFTMarketplace is ERC721URIStorage {
       _transfer(msg.sender, address(this), tokenId);
     }
 
-    /* Creates the sale of a marketplace item */
-    /* Transfers ownership of the item, as well as funds between parties */
+    // @notice creates the sale of a marketplace item */
+    // @notice Transfers ownership of the item, as well as funds between parties
     function createMarketSale(uint256 tokenId) public payable {
       uint price = idToMarketItem[tokenId].price;
       require(msg.value == price, "Please submit the asking price in order to complete the purchase");
@@ -134,37 +126,35 @@ contract NFTMarketplace is ERC721URIStorage {
       idToMarketItem[tokenId].seller = payable(address(0));
       _itemsSold.increment();
       
-      // next, we want to transfer the NFT ownership from the seller to the buyer
       _transfer(address(this), msg.sender, tokenId);
 
-      //!why is that necessary? the seller paid the listing fee already... 
+      // check with C: why is that necessary? the seller paid the listing fee already... 
       payable(owner).transfer(listingPrice);
       payable(idToMarketItem[tokenId].seller).transfer(msg.value);
     }
 
-    /* Returns all unsold market items */
+    // @dev helper function for getting an array of id
     function fetchMarketItems() public view returns (MarketItem[] memory) {
       uint itemCount = _tokenIds.current();
       uint unsoldItemCount = _tokenIds.current() - _itemsSold.current();
       uint currentIndex = 0;
 
-      // looping over the number of items created and incremnet that number if we have an empty address 
+      // @dev looping over the number of items created and incremnet that number if we have an empty address 
 
-      // empty array called items
-      // the type of the element in the array is marketitem, and the unsolditemcount is the length
+      // @dev empty array called items
+      // @dev the type of the element in the array is marketitem, and the unsolditemcount is the length
       MarketItem[] memory items = new MarketItem[](unsoldItemCount);
       for (uint i = 0; i < itemCount; i++) {
-        // check to see if the item is unsold -> checking if the owner is an empty address -> then it's unsold
+        // @dev check to see if the item is unsold -> checking if the owner is an empty address -> then it's unsold
         // above, where we were creating a new market item, we were setting the address to be an empty address
-        // the address get's populated if the item is sold
         if (idToMarketItem[i + 1].owner == address(this)) {
-          // the id of the item that we're currently interracting with
+          // @dev the id of the item that we're currently interracting with
           uint currentId = i + 1;
-          // get the mapping of the idtomarketitem with the -> gives us the reference to the marketitem
+          // @dev get the mapping of the idtomarketitem -> gives us the reference to the marketitem
           MarketItem storage currentItem = idToMarketItem[currentId];
-          // insert the market item to the items array
+          // @dev insert the market item to the items array
           items[currentIndex] = currentItem;
-          // increment the current index
+          // @dev increment the current index
           currentIndex += 1;
         }
       }
@@ -172,38 +162,35 @@ contract NFTMarketplace is ERC721URIStorage {
       return items;
     }
 
-    /* Returns only items that a user has purchased */
+    // @notice Returns only items that a user has purchased 
     function fetchMyNFTs() public view returns (MarketItem[] memory) {
       uint totalItemCount = _tokenIds.current();
       uint itemCount = 0;
       uint currentIndex = 0;
 
-      // gives us the number of items that we own
+      // @dev gives us the number of items that the user owns
       for (uint i = 0; i < totalItemCount; i++) {
-        // check if nft is mine
+        // @dev check if nft belongs to the user 
         if (idToMarketItem[i + 1].owner == msg.sender) {
           itemCount += 1;
         }
       }
 
+      //@dev same logic as fetchMarketItems
+
       MarketItem[] memory items = new MarketItem[](itemCount);
       for (uint i = 0; i < totalItemCount; i++) {
-        // check if nft is mine
         if (idToMarketItem[i + 1].owner == msg.sender) {
-          // get the id of the market item
           uint currentId = i + 1;
-          // get the reference to the current market item
           MarketItem storage currentItem = idToMarketItem[currentId];
-          // insert into the array
           items[currentIndex] = currentItem;
-          // increment the index
           currentIndex += 1;
         }
       }
       return items;
     }
 
-    /* Returns only items a user has listed */
+    // @notice Returns only items a user has listed 
     function fetchItemsListed() public view returns (MarketItem[] memory) {
       uint totalItemCount = _tokenIds.current();
       uint itemCount = 0;
@@ -214,6 +201,8 @@ contract NFTMarketplace is ERC721URIStorage {
           itemCount += 1;
         }
       }
+
+            //@dev same logic as fetchMarketItems
 
       MarketItem[] memory items = new MarketItem[](itemCount);
       for (uint i = 0; i < totalItemCount; i++) {
